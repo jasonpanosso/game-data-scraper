@@ -76,12 +76,14 @@ pub async fn scrape_itch_rss_feed(
                         Ok(data) => {
                             itch_data_output.push(combine_itch_rss_and_info_data(data, item))
                         }
-                        Err(err) => eprintln!("Error parsing Itch Game Page HTML: {:?}", err),
+                        Err(err) => {
+                            eprintln!("Error parsing Itch game page {:?}: {:?}", &item.link, err)
+                        }
                     }
                 }
             }
             Err(err) => {
-                eprintln!("Error parsing RSS xml: {:?}", err);
+                eprintln!("Error parsing RSS xml for URL {:?}: {:?}", rss_url, err);
             }
         }
     }
