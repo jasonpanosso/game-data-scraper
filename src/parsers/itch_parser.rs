@@ -51,6 +51,44 @@ pub enum ItchHTMLDataFormatError {
     },
 }
 
+#[derive(Debug)]
+pub enum ItchTableData {
+    UpdatedDate,
+    PublishDate,
+    Status,
+    Platforms,
+    Rating,
+    Author,
+    Genre,
+    MadeWith,
+    Tags,
+    AverageSession,
+    Languages,
+    Inputs,
+    Links,
+}
+
+impl ItchTableData {
+    fn from_str(s: &str) -> Option<ItchTableData> {
+        match s {
+            "Updated" => Some(ItchTableData::UpdatedDate),
+            "Published" => Some(ItchTableData::PublishDate),
+            "Status" => Some(ItchTableData::Status),
+            "Platforms" => Some(ItchTableData::Platforms),
+            "Rating" => Some(ItchTableData::Rating),
+            "Author" => Some(ItchTableData::Author),
+            "Genre" => Some(ItchTableData::Genre),
+            "Made with" => Some(ItchTableData::MadeWith),
+            "Tags" => Some(ItchTableData::Tags),
+            "Average session" => Some(ItchTableData::AverageSession),
+            "Languages" => Some(ItchTableData::Languages),
+            "Inputs" => Some(ItchTableData::Inputs),
+            "Links" => Some(ItchTableData::Links),
+            _ => None,
+        }
+    }
+}
+
 pub fn parse_itch_game_page_data(
     raw_html: &str,
 ) -> Result<MoreInfoTableData, ItchHTMLDataFormatError> {
@@ -109,44 +147,6 @@ pub fn parse_itch_game_page_data(
     }
 
     Ok(itch_data)
-}
-
-#[derive(Debug)]
-pub enum ItchTableData {
-    UpdatedDate,
-    PublishDate,
-    Status,
-    Platforms,
-    Rating,
-    Author,
-    Genre,
-    MadeWith,
-    Tags,
-    AverageSession,
-    Languages,
-    Inputs,
-    Links,
-}
-
-impl ItchTableData {
-    fn from_str(s: &str) -> Option<ItchTableData> {
-        match s {
-            "Updated" => Some(ItchTableData::UpdatedDate),
-            "Published" => Some(ItchTableData::PublishDate),
-            "Status" => Some(ItchTableData::Status),
-            "Platforms" => Some(ItchTableData::Platforms),
-            "Rating" => Some(ItchTableData::Rating),
-            "Author" => Some(ItchTableData::Author),
-            "Genre" => Some(ItchTableData::Genre),
-            "Made with" => Some(ItchTableData::MadeWith),
-            "Tags" => Some(ItchTableData::Tags),
-            "Average session" => Some(ItchTableData::AverageSession),
-            "Languages" => Some(ItchTableData::Languages),
-            "Inputs" => Some(ItchTableData::Inputs),
-            "Links" => Some(ItchTableData::Links),
-            _ => None,
-        }
-    }
 }
 
 fn parse_row_data_type(el: ElementRef) -> Result<ItchTableData, ItchHTMLDataFormatError> {
