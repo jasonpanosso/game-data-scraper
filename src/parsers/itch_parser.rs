@@ -1,35 +1,36 @@
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use scraper::{ElementRef, Html, Selector};
+use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Default, Debug)]
-struct ItchData {
-    last_update_date: DateTime<Utc>,
-    publish_date: DateTime<Utc>,
-    status: String,
-    platforms: Vec<String>,
-    rating: ItchRating,
-    author: String,
-    genre: String,
-    made_with: String,
-    tags: Vec<String>,
-    average_session: String,
-    languages: Vec<String>,
-    inputs: Vec<String>,
-    links: Vec<Link>,
+#[derive(Default, Debug, Serialize)]
+pub struct MoreInfoTableData {
+    pub last_update_date: DateTime<Utc>,
+    pub publish_date: DateTime<Utc>,
+    pub status: String,
+    pub platforms: Vec<String>,
+    pub rating: ItchRating,
+    pub author: String,
+    pub genre: String,
+    pub made_with: String,
+    pub tags: Vec<String>,
+    pub average_session: String,
+    pub languages: Vec<String>,
+    pub inputs: Vec<String>,
+    pub links: Vec<Link>,
 }
 
-#[derive(Default, Debug)]
-struct Link {
-    name: String,
-    url: String,
+#[derive(Default, Debug, Serialize)]
+pub struct Link {
+    pub name: String,
+    pub url: String,
 }
 
-#[derive(Default, Debug)]
-struct ItchRating {
-    score: f32,
-    count: i32,
+#[derive(Default, Debug, Serialize)]
+pub struct ItchRating {
+    pub score: f32,
+    pub count: i32,
 }
 
 #[derive(Error, Debug)]
@@ -50,12 +51,14 @@ pub enum ItchHTMLDataFormatError {
     },
 }
 
-pub fn parse_itch_data(raw_html: &str) -> Result<String, ItchHTMLDataFormatError> {
+pub fn parse_itch_game_page_data(
+    raw_html: &str,
+) -> Result<MoreInfoTableData, ItchHTMLDataFormatError> {
     let document = Html::parse_document(raw_html);
     let tr_selector = Selector::parse("div.game_info_panel_widget table tbody tr").unwrap();
     let td_selector = Selector::parse("td").unwrap();
 
-    let mut itch_data = ItchData::default();
+    let mut itch_data = MoreInfoTableData::default();
 
     for tr in document.select(&tr_selector) {
         let tds: Vec<ElementRef<'_>> = tr.select(&td_selector).collect();
@@ -105,9 +108,7 @@ pub fn parse_itch_data(raw_html: &str) -> Result<String, ItchHTMLDataFormatError
         }
     }
 
-    println!("{:?}", itch_data);
-
-    Ok(raw_html.to_string())
+    Ok(itch_data)
 }
 
 #[derive(Debug)]
