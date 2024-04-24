@@ -1,5 +1,5 @@
 [package]
-name = "itchy_scrape"
+name = "game-data-scraper"
 version = "0.1.0"
 edition = "2021"
 
