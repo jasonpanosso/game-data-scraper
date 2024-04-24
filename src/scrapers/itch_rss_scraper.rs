@@ -4,6 +4,7 @@ use crate::parsers::itch_game_info_parser::{
 use anyhow::Result;
 use reqwest::{Client, StatusCode};
 use tokio::time::{sleep, Duration};
+use indicatif::{ProgressBar, ProgressStyle};
 
 #[derive(Default, Debug, serde::Serialize)]
 pub struct ItchData {
@@ -63,6 +64,13 @@ pub async fn scrape_itch_rss_feed(
 ) -> Result<Vec<ItchData>> {
     let client = Client::new();
 
+    let pb = ProgressBar::new(page_limit as u64);
+    pb.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} pages")?
+        .progress_chars("##-"));
+    pb.enable_steady_tick(Duration::new(0, 100000000));
+    pb.tick();
+
     let mut itch_data_output = Vec::new();
     for page in 1..=page_limit {
         let rss_url = format!("{}?page={}", url, page);
@@ -86,8 +94,11 @@ pub async fn scrape_itch_rss_feed(
                 eprintln!("Error parsing RSS xml for URL {:?}: {:?}", rss_url, err);
             }
         }
+
+        pb.inc(1);
     }
 
+    pb.finish_with_message("Done scraping.");
     Ok(itch_data_output)
 }
 
@@ -106,14 +117,6 @@ async fn fetch_url(client: &Client, url: &str, max_retries: u32) -> Result<Strin
                         return Err(res.error_for_status().unwrap_err());
                     }
 
-                    eprintln!(
-                        "Rate limited while fetching {}. Retrying in {} seconds... (attempt {}/{})",
-                        url,
-                        delay,
-                        retries + 1,
-                        max_retries
-                    );
-
                     sleep(Duration::from_secs(delay)).await;
                     delay = std::cmp::min(300, delay * 2);
                     retries += 1;
@@ -124,14 +127,6 @@ async fn fetch_url(client: &Client, url: &str, max_retries: u32) -> Result<Strin
                 if retries >= max_retries {
                     return Err(err);
                 }
-
-                eprintln!(
-                    "Error sending request to {}. Retrying in {} seconds... (attempt {}/{})",
-                    url,
-                    delay,
-                    retries + 1,
-                    max_retries
-                );
 
                 sleep(Duration::from_secs(delay)).await;
                 delay = std::cmp::min(300, delay * 2);
