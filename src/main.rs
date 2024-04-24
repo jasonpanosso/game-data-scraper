@@ -37,9 +37,12 @@ fn main() -> Result<()> {
     let max_retries = args.max_retries.unwrap_or(20);
 
     let rt = tokio::runtime::Runtime::new()?;
-    let itch_data = rt.block_on(scrape_itch_rss_feed(args.url, max_retries, page_limit))?;
-
-    let json = serde_json::to_string(&itch_data)?;
+    let json = match args.site {
+        Site::Itch => {
+            let itch_data = rt.block_on(scrape_itch_rss_feed(args.url, max_retries, page_limit))?;
+            serde_json::to_string(&itch_data)?
+        }
+    };
 
     match args.outfile {
         Some(file) => {
