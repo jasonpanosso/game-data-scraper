@@ -1,4 +1,4 @@
-use crate::scrapers::itch_scraper::scrape_itch_rss_feed;
+use crate::scrapers::itch_rss_scraper::scrape_itch_rss_feed;
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
@@ -10,17 +10,20 @@ mod scrapers;
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
-    #[arg(short, long, value_name = "FILE PATH")]
-    outfile: Option<PathBuf>,
-
     #[arg(short, long, value_enum, value_name = "SITE NAME")]
     site: Site,
 
     #[arg(short, long, value_enum, value_name = "BASE URL")]
     url: String,
 
+    #[arg(short, long, value_name = "FILE PATH")]
+    outfile: Option<PathBuf>,
+
     #[arg(short, long, value_name = "PAGE LIMIT")]
     page_limit: Option<i32>,
+
+    #[arg(short, long, value_name = "MAX RETRIES")]
+    max_retries: Option<u32>,
 }
 
 #[derive(Debug, ValueEnum, Clone)]
@@ -30,13 +33,14 @@ enum Site {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+    let page_limit = args.page_limit.unwrap_or(300);
+    let max_retries = args.max_retries.unwrap_or(20);
 
     let rt = tokio::runtime::Runtime::new()?;
-
-    let page_limit = args.page_limit.unwrap_or(300);
-    let itch_data = rt.block_on(scrape_itch_rss_feed(args.url, page_limit))?;
+    let itch_data = rt.block_on(scrape_itch_rss_feed(args.url, max_retries, page_limit))?;
 
     let json = serde_json::to_string(&itch_data)?;
+
     match args.outfile {
         Some(file) => {
             fs::write(file, json)?;

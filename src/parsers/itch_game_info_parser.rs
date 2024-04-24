@@ -1,19 +1,16 @@
 use anyhow::Result;
-use chrono::{DateTime, NaiveDateTime, Utc};
 use scraper::{ElementRef, Html, Selector};
 use serde::Serialize;
 use thiserror::Error;
 
 #[derive(Default, Debug, Serialize)]
 pub struct MoreInfoTableData {
-    pub last_update_date: DateTime<Utc>,
-    pub publish_date: DateTime<Utc>,
     pub status: String,
     pub platforms: Vec<String>,
     pub rating: ItchRating,
-    pub author: String,
-    pub genre: String,
-    pub made_with: String,
+    pub author: Vec<String>,
+    pub genre: Vec<String>,
+    pub made_with: Vec<String>,
     pub tags: Vec<String>,
     pub average_session: String,
     pub languages: Vec<String>,
@@ -53,12 +50,10 @@ pub enum ItchHTMLDataFormatError {
 
 #[derive(Debug)]
 pub enum ItchTableData {
-    UpdatedDate,
-    PublishDate,
     Status,
     Platforms,
     Rating,
-    Author,
+    Authors,
     Genre,
     MadeWith,
     Tags,
@@ -71,12 +66,11 @@ pub enum ItchTableData {
 impl ItchTableData {
     fn from_str(s: &str) -> Option<ItchTableData> {
         match s {
-            "Updated" => Some(ItchTableData::UpdatedDate),
-            "Published" => Some(ItchTableData::PublishDate),
             "Status" => Some(ItchTableData::Status),
             "Platforms" => Some(ItchTableData::Platforms),
             "Rating" => Some(ItchTableData::Rating),
-            "Author" => Some(ItchTableData::Author),
+            "Author" => Some(ItchTableData::Authors),
+            "Authors" => Some(ItchTableData::Authors),
             "Genre" => Some(ItchTableData::Genre),
             "Made with" => Some(ItchTableData::MadeWith),
             "Tags" => Some(ItchTableData::Tags),
@@ -99,21 +93,18 @@ pub fn parse_itch_game_page_data(
     let mut itch_data = MoreInfoTableData::default();
 
     for tr in document.select(&tr_selector) {
-        let tds: Vec<ElementRef<'_>> = tr.select(&td_selector).collect();
+        let tds: Vec<ElementRef> = tr.select(&td_selector).collect();
         if tds.len() != 2 {
             return Err(ItchHTMLDataFormatError::MissingElements);
         }
 
-        let data_type = parse_row_data_type(tds[0])?;
+        let data_type = match parse_row_data_type(tds[0]) {
+            Ok(data) => data,
+            Err(_) => continue,
+        };
         let data = tds[1];
 
         match data_type {
-            ItchTableData::UpdatedDate => {
-                itch_data.last_update_date = parse_date_element(data, data_type)?
-            }
-            ItchTableData::PublishDate => {
-                itch_data.publish_date = parse_date_element(data, data_type)?
-            }
             ItchTableData::Status => {
                 itch_data.status = data.text().collect::<String>().trim().to_owned()
             }
@@ -121,15 +112,9 @@ pub fn parse_itch_game_page_data(
                 itch_data.platforms = parse_anchor_separated_strings(data);
             }
             ItchTableData::Rating => itch_data.rating = parse_rating_element(data, data_type)?,
-            ItchTableData::Author => {
-                itch_data.author = data.text().collect::<String>().trim().to_owned()
-            }
-            ItchTableData::Genre => {
-                itch_data.genre = data.text().collect::<String>().trim().to_owned()
-            }
-            ItchTableData::MadeWith => {
-                itch_data.made_with = data.text().collect::<String>().trim().to_owned()
-            }
+            ItchTableData::Authors => itch_data.author = parse_anchor_separated_strings(data),
+            ItchTableData::Genre => itch_data.genre = parse_anchor_separated_strings(data),
+            ItchTableData::MadeWith => itch_data.made_with = parse_anchor_separated_strings(data),
             ItchTableData::Tags => itch_data.tags = parse_anchor_separated_strings(data),
             ItchTableData::AverageSession => {
                 itch_data.average_session = data.text().collect::<String>().trim().to_owned()
@@ -156,32 +141,6 @@ fn parse_row_data_type(el: ElementRef) -> Result<ItchTableData, ItchHTMLDataForm
         Ok(table_data)
     } else {
         Err(ItchHTMLDataFormatError::UnknownDataType { data: inner_html }.into())
-    }
-}
-
-fn parse_date_element(
-    el: ElementRef,
-    data_type: ItchTableData,
-) -> Result<DateTime<Utc>, ItchHTMLDataFormatError> {
-    let selector = Selector::parse("abbr").unwrap();
-
-    match el.select(&selector).next() {
-        Some(abbr) => {
-            if let Some(title) = abbr.value().attr("title") {
-                if let Ok(date) = NaiveDateTime::parse_from_str(title, "%d %B %Y @ %H:%M UTC") {
-                    Ok(date.and_utc())
-                } else {
-                    Err(ItchHTMLDataFormatError::InvalidData {
-                        data_type,
-                        found: title.to_string(),
-                    }
-                    .into())
-                }
-            } else {
-                Err(ItchHTMLDataFormatError::MissingData { data_type }.into())
-            }
-        }
-        None => Err(ItchHTMLDataFormatError::MissingData { data_type }.into()),
     }
 }
 

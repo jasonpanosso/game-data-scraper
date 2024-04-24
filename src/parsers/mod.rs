@@ -1,1 +1,1 @@
-pub mod itch_parser;
+pub mod itch_game_info_parser;

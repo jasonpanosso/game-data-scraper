@@ -1,1 +1,1 @@
-pub mod itch_scraper;
+pub mod itch_rss_scraper;
