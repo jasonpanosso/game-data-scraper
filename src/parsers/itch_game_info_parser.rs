@@ -6,16 +6,18 @@ use thiserror::Error;
 #[derive(Default, Debug, Serialize)]
 pub struct MoreInfoTableData {
     pub status: String,
+    pub release_date: String,
     pub platforms: Vec<String>,
     pub rating: ItchRating,
-    pub author: Vec<String>,
-    pub genre: Vec<String>,
+    pub authors: Vec<String>,
+    pub genres: Vec<String>,
     pub made_with: Vec<String>,
     pub tags: Vec<String>,
     pub average_session: String,
     pub languages: Vec<String>,
     pub inputs: Vec<String>,
     pub links: Vec<Link>,
+    pub accessibility: Vec<String>,
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -50,32 +52,39 @@ pub enum ItchHTMLDataFormatError {
 
 #[derive(Debug)]
 pub enum ItchTableData {
+    ReleaseDate,
     Status,
     Platforms,
     Rating,
     Authors,
-    Genre,
+    Genres,
     MadeWith,
     Tags,
     AverageSession,
     Languages,
     Inputs,
     Links,
+    Accessibility,
 }
 
 impl ItchTableData {
     fn from_str(s: &str) -> Option<ItchTableData> {
         match s {
             "Status" => Some(ItchTableData::Status),
+            "Release date" => Some(ItchTableData::ReleaseDate),
+            "Accessibility" => Some(ItchTableData::Accessibility),
             "Platforms" => Some(ItchTableData::Platforms),
             "Rating" => Some(ItchTableData::Rating),
             "Author" => Some(ItchTableData::Authors),
             "Authors" => Some(ItchTableData::Authors),
-            "Genre" => Some(ItchTableData::Genre),
+            "Genre" => Some(ItchTableData::Genres),
+            "Genres" => Some(ItchTableData::Genres),
             "Made with" => Some(ItchTableData::MadeWith),
+            "Tag" => Some(ItchTableData::Tags),
             "Tags" => Some(ItchTableData::Tags),
             "Average session" => Some(ItchTableData::AverageSession),
             "Languages" => Some(ItchTableData::Languages),
+            "Language" => Some(ItchTableData::Languages),
             "Inputs" => Some(ItchTableData::Inputs),
             "Links" => Some(ItchTableData::Links),
             _ => None,
@@ -105,15 +114,21 @@ pub fn parse_itch_game_page_data(
         let data = tds[1];
 
         match data_type {
+            ItchTableData::ReleaseDate => {
+                itch_data.release_date = data.text().collect::<String>().trim().to_owned()
+            }
             ItchTableData::Status => {
                 itch_data.status = data.text().collect::<String>().trim().to_owned()
+            }
+            ItchTableData::Accessibility => {
+                itch_data.accessibility = parse_anchor_separated_strings(data)
             }
             ItchTableData::Platforms => {
                 itch_data.platforms = parse_anchor_separated_strings(data);
             }
             ItchTableData::Rating => itch_data.rating = parse_rating_element(data, data_type)?,
-            ItchTableData::Authors => itch_data.author = parse_anchor_separated_strings(data),
-            ItchTableData::Genre => itch_data.genre = parse_anchor_separated_strings(data),
+            ItchTableData::Authors => itch_data.authors = parse_anchor_separated_strings(data),
+            ItchTableData::Genres => itch_data.genres = parse_anchor_separated_strings(data),
             ItchTableData::MadeWith => itch_data.made_with = parse_anchor_separated_strings(data),
             ItchTableData::Tags => itch_data.tags = parse_anchor_separated_strings(data),
             ItchTableData::AverageSession => {

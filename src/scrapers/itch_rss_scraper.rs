@@ -2,23 +2,24 @@ use crate::parsers::itch_game_info_parser::{
     parse_itch_game_page_data, ItchRating, Link, MoreInfoTableData,
 };
 use anyhow::Result;
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{Client, StatusCode};
 use tokio::time::{sleep, Duration};
-use indicatif::{ProgressBar, ProgressStyle};
 
 #[derive(Default, Debug, serde::Serialize)]
 pub struct ItchData {
-    link: String,
     title: String,
     plain_title: String,
-    price: String,
-    description: String,
-    pub_date: String,
+    link: String,
     create_date: String,
     update_date: String,
+    release_date: String,
+    pub_date: String,
+    price: String,
+    description: String,
     rating: ItchRating,
-    author: Vec<String>,
-    genre: Vec<String>,
+    authors: Vec<String>,
+    genres: Vec<String>,
     made_with: Vec<String>,
     tags: Vec<String>,
     average_session: String,
@@ -27,6 +28,7 @@ pub struct ItchData {
     links: Vec<Link>,
     status: String,
     platforms: Vec<String>,
+    accessibility: Vec<String>,
 }
 
 #[derive(Debug, serde::Deserialize, PartialEq)]
@@ -65,9 +67,11 @@ pub async fn scrape_itch_rss_feed(
     let client = Client::new();
 
     let pb = ProgressBar::new(page_limit as u64);
-    pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} pages")?
-        .progress_chars("##-"));
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} pages")?
+            .progress_chars("##-"),
+    );
     pb.enable_steady_tick(Duration::new(0, 100000000));
     pb.tick();
 
@@ -151,11 +155,13 @@ fn combine_itch_rss_and_info_data(table_data: MoreInfoTableData, rss_data: Item)
         languages: table_data.languages,
         made_with: table_data.made_with,
         inputs: table_data.inputs,
-        author: table_data.author,
+        authors: table_data.authors,
+        release_date: table_data.release_date,
         rating: table_data.rating,
         links: table_data.links,
-        genre: table_data.genre,
+        genres: table_data.genres,
         status: table_data.status,
         tags: table_data.tags,
+        accessibility: table_data.accessibility,
     }
 }
