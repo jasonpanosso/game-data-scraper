@@ -36,14 +36,13 @@ fn main() -> Result<()> {
     let page_limit = args.page_limit.unwrap_or(300);
     let itch_data = rt.block_on(scrape_itch_rss_feed(args.url, page_limit))?;
 
-    if let Ok(json) = serde_json::to_string(&itch_data) {
-        match args.outfile {
-            Some(file) => {
-                fs::write(file, json)?;
-            }
-            None => {
-                io::stdout().write_all(json.as_bytes())?;
-            }
+    let json = serde_json::to_string(&itch_data)?;
+    match args.outfile {
+        Some(file) => {
+            fs::write(file, json)?;
+        }
+        None => {
+            io::stdout().write_all(json.as_bytes())?;
         }
     }
 
