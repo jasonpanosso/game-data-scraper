@@ -10,19 +10,19 @@ mod scrapers;
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
-    #[arg(short, long, value_enum, value_name = "SITE NAME")]
+    #[arg(short, long, value_enum, value_name = "SITE")]
     site: Site,
 
-    #[arg(short, long, value_enum, value_name = "BASE URL")]
+    #[arg(short, long, value_enum, value_name = "URL")]
     url: String,
 
     #[arg(short, long, value_name = "FILE PATH")]
     outfile: Option<PathBuf>,
 
-    #[arg(short, long, value_name = "PAGE LIMIT")]
+    #[arg(short, long, value_name = "INTEGER")]
     page_limit: Option<i32>,
 
-    #[arg(short, long, value_name = "MAX RETRIES")]
+    #[arg(short, long, value_name = "INTEGER")]
     max_retries: Option<u32>,
 }
 
